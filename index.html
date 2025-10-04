@@ -586,8 +586,8 @@
                     playSound('drone_hit');
                     setTimeout(() => playSound('drone_explosion'), 50);
 
-                    // Show success dog (only 30% of the time)
-                    if (Math.random() < 0.3) {
+                    // Show success dog (50% of the time)
+                    if (Math.random() < 0.5) {
                         if (dronesDestroyedThisGame === 1) {
                             triggerDogAnimation('dog-one-drone');
                         } else if (dronesDestroyedThisGame >= 2) {
@@ -799,8 +799,8 @@
                                 gameState = 'gameOver';
                                 playSound('game_over');
                             } else {
-                                // Show laughing dog when drone gets through (50% of the time)
-                                if (Math.random() < 0.5) {
+                                // Show laughing dog when drone gets through (70% of the time)
+                                if (Math.random() < 0.7) {
                                     triggerDogAnimation('dog-laugh');
                                     playSound('dog_laugh');
                                 }
