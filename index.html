@@ -332,6 +332,19 @@
                     overOsc.start(now);
                     overOsc.stop(now + 0.5);
                     break;
+
+                case 'empty_click':
+                    // Dry firing click (short, dull)
+                    const clickOsc = audioContext.createOscillator();
+                    const clickGain = audioContext.createGain();
+                    clickOsc.type = 'square';
+                    clickOsc.frequency.value = 100;
+                    clickGain.gain.setValueAtTime(0.1, now);
+                    clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    clickOsc.connect(clickGain).connect(audioContext.destination);
+                    clickOsc.start(now);
+                    clickOsc.stop(now + 0.05);
+                    break;
             }
         }
 
@@ -546,7 +559,12 @@
 
         // Shoot shotgun
         function shoot() {
-            if (gameState !== 'playing' || ammo <= 0) return;
+            if (gameState !== 'playing') return;
+
+            if (ammo <= 0) {
+                playSound('empty_click');
+                return;
+            }
 
             ammo--;
             playSound('shotgun');
