@@ -4,7 +4,13 @@
       "Bash(node:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git branch:*)",
+      "Bash(git stash:*)",
+      "Bash(sips:*)",
+      "WebFetch(domain:cards-dev.twitter.com)",
+      "WebFetch(domain:dronehuntergame.com)"
     ],
     "deny": [],
     "ask": []
