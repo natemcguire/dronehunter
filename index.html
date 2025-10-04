@@ -568,11 +568,13 @@
                     playSound('drone_hit');
                     setTimeout(() => playSound('drone_explosion'), 50);
 
-                    // Show success dog
-                    if (dronesDestroyedThisGame === 1) {
-                        triggerDogAnimation('dog-one-drone');
-                    } else if (dronesDestroyedThisGame >= 2) {
-                        triggerDogAnimation('dog-two-drones');
+                    // Show success dog (only 30% of the time)
+                    if (Math.random() < 0.3) {
+                        if (dronesDestroyedThisGame === 1) {
+                            triggerDogAnimation('dog-one-drone');
+                        } else if (dronesDestroyedThisGame >= 2) {
+                            triggerDogAnimation('dog-two-drones');
+                        }
                     }
                 }
             });
@@ -779,9 +781,11 @@
                                 gameState = 'gameOver';
                                 playSound('game_over');
                             } else {
-                                // Show laughing dog when drone gets through
-                                triggerDogAnimation('dog-laugh');
-                                playSound('dog_laugh');
+                                // Show laughing dog when drone gets through (50% of the time)
+                                if (Math.random() < 0.5) {
+                                    triggerDogAnimation('dog-laugh');
+                                    playSound('dog_laugh');
+                                }
                             }
                         } else {
                             drone.draw();
