@@ -147,6 +147,10 @@
         let dogAnimation = { active: false, y: 0, targetY: 0, type: null, x: 0 };
 
         // Game settings
+        function getDronesPerRound(round) {
+            // Increase drones per round: 10, 12, 14, 16...
+            return 10 + (round - 1) * 2;
+        }
         const DRONES_PER_ROUND = 10;
         const MAX_DRONES_PASSED = 3;
         const DRONE_BASE_WIDTH = 260; // 2x + 30% bigger
@@ -181,6 +185,154 @@
                 SHELL_WIDTH,
                 SHELL_HEIGHT
             };
+        }
+
+        // NES-style 8-bit sound synthesis (Duck Hunt aesthetic)
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            const now = audioContext.currentTime;
+
+            switch(type) {
+                case 'shotgun':
+                    // Short white noise burst (like Duck Hunt)
+                    const shotgunBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.15, audioContext.sampleRate);
+                    const shotgunData = shotgunBuffer.getChannelData(0);
+                    for (let i = 0; i < shotgunData.length; i++) {
+                        shotgunData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioContext.sampleRate * 0.05));
+                    }
+                    const shotgunSource = audioContext.createBufferSource();
+                    shotgunSource.buffer = shotgunBuffer;
+                    const shotgunGain = audioContext.createGain();
+                    shotgunGain.gain.value = 0.3;
+                    shotgunSource.connect(shotgunGain).connect(audioContext.destination);
+                    shotgunSource.start(now);
+                    break;
+
+                case 'reload':
+                    // Mechanical "chhk" pump sound
+                    const reloadOsc = audioContext.createOscillator();
+                    const reloadGain = audioContext.createGain();
+                    reloadOsc.type = 'square';
+                    reloadOsc.frequency.setValueAtTime(150, now);
+                    reloadOsc.frequency.exponentialRampToValueAtTime(80, now + 0.08);
+                    reloadGain.gain.setValueAtTime(0.2, now);
+                    reloadGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    reloadOsc.connect(reloadGain).connect(audioContext.destination);
+                    reloadOsc.start(now);
+                    reloadOsc.stop(now + 0.08);
+                    break;
+
+                case 'drone_hit':
+                    // Brief high-pitched electrical zap
+                    const hitOsc = audioContext.createOscillator();
+                    const hitGain = audioContext.createGain();
+                    hitOsc.type = 'square';
+                    hitOsc.frequency.setValueAtTime(1200, now);
+                    hitOsc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+                    hitGain.gain.setValueAtTime(0.15, now);
+                    hitGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    hitOsc.connect(hitGain).connect(audioContext.destination);
+                    hitOsc.start(now);
+                    hitOsc.stop(now + 0.1);
+                    break;
+
+                case 'drone_explosion':
+                    // Large bassy explosion
+                    const expOsc = audioContext.createOscillator();
+                    const expGain = audioContext.createGain();
+                    expOsc.type = 'sawtooth';
+                    expOsc.frequency.setValueAtTime(120, now);
+                    expOsc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+                    expGain.gain.setValueAtTime(0.3, now);
+                    expGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    expOsc.connect(expGain).connect(audioContext.destination);
+                    expOsc.start(now);
+                    expOsc.stop(now + 0.3);
+                    break;
+
+                case 'drone_flyaway':
+                    // Rising pitch whoosh (drone escapes)
+                    const flyOsc = audioContext.createOscillator();
+                    const flyGain = audioContext.createGain();
+                    flyOsc.type = 'square';
+                    flyOsc.frequency.setValueAtTime(200, now);
+                    flyOsc.frequency.exponentialRampToValueAtTime(800, now + 0.25);
+                    flyGain.gain.setValueAtTime(0.15, now);
+                    flyGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    flyOsc.connect(flyGain).connect(audioContext.destination);
+                    flyOsc.start(now);
+                    flyOsc.stop(now + 0.25);
+                    break;
+
+                case 'dog_laugh':
+                    // Two "ha ha" pulses (Duck Hunt style)
+                    const laughOsc1 = audioContext.createOscillator();
+                    const laughOsc2 = audioContext.createOscillator();
+                    const laughGain = audioContext.createGain();
+                    laughOsc1.type = 'square';
+                    laughOsc2.type = 'square';
+                    laughOsc1.frequency.value = 400;
+                    laughOsc2.frequency.value = 350;
+                    laughGain.gain.setValueAtTime(0, now);
+                    laughGain.gain.setValueAtTime(0.15, now + 0.05);
+                    laughGain.gain.setValueAtTime(0, now + 0.15);
+                    laughGain.gain.setValueAtTime(0.15, now + 0.25);
+                    laughGain.gain.setValueAtTime(0, now + 0.35);
+                    laughOsc1.connect(laughGain).connect(audioContext.destination);
+                    laughOsc2.connect(laughGain);
+                    laughOsc1.start(now);
+                    laughOsc2.start(now);
+                    laughOsc1.stop(now + 0.4);
+                    laughOsc2.stop(now + 0.4);
+                    break;
+
+                case 'round_start':
+                    // Ascending 3-note fanfare
+                    const startOsc = audioContext.createOscillator();
+                    const startGain = audioContext.createGain();
+                    startOsc.type = 'square';
+                    startOsc.frequency.setValueAtTime(523, now); // C
+                    startOsc.frequency.setValueAtTime(659, now + 0.1); // E
+                    startOsc.frequency.setValueAtTime(784, now + 0.2); // G
+                    startGain.gain.setValueAtTime(0.2, now);
+                    startGain.gain.setValueAtTime(0.2, now + 0.2);
+                    startGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    startOsc.connect(startGain).connect(audioContext.destination);
+                    startOsc.start(now);
+                    startOsc.stop(now + 0.4);
+                    break;
+
+                case 'round_clear':
+                    // Quick success melody
+                    const clearOsc = audioContext.createOscillator();
+                    const clearGain = audioContext.createGain();
+                    clearOsc.type = 'square';
+                    clearOsc.frequency.setValueAtTime(659, now); // E
+                    clearOsc.frequency.setValueAtTime(784, now + 0.08); // G
+                    clearOsc.frequency.setValueAtTime(1047, now + 0.16); // C
+                    clearGain.gain.setValueAtTime(0.2, now);
+                    clearGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    clearOsc.connect(clearGain).connect(audioContext.destination);
+                    clearOsc.start(now);
+                    clearOsc.stop(now + 0.3);
+                    break;
+
+                case 'game_over':
+                    // Descending 3-note falloff
+                    const overOsc = audioContext.createOscillator();
+                    const overGain = audioContext.createGain();
+                    overOsc.type = 'square';
+                    overOsc.frequency.setValueAtTime(523, now); // C
+                    overOsc.frequency.setValueAtTime(392, now + 0.15); // G
+                    overOsc.frequency.setValueAtTime(262, now + 0.3); // C low
+                    overGain.gain.setValueAtTime(0.2, now);
+                    overGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    overOsc.connect(overGain).connect(audioContext.destination);
+                    overOsc.start(now);
+                    overOsc.stop(now + 0.5);
+                    break;
+            }
         }
 
         // Image assets
@@ -331,10 +483,12 @@
 
         // Spawn drone
         function spawnDrone() {
-            if (dronesSpawnedThisRound < DRONES_PER_ROUND) {
+            const dronesThisRound = getDronesPerRound(round);
+            if (dronesSpawnedThisRound < dronesThisRound) {
                 const x = 100 + Math.random() * (canvas.width - 200);
                 const baseSpeed = 2;
-                const speed = baseSpeed + (round - 1) * 0.5;
+                // Increase speed more aggressively each round
+                const speed = baseSpeed + (round - 1) * 0.8;
                 drones.push(new Drone(x, speed));
                 dronesSpawnedThisRound++;
             }
@@ -395,6 +549,7 @@
             if (gameState !== 'playing' || ammo <= 0) return;
 
             ammo--;
+            playSound('shotgun');
             let hitAny = false;
 
             // Check for hits - no blast visual, just check hits
@@ -410,6 +565,9 @@
                     const screenY = drone.getScreenY();
                     explosions.push(new Explosion(drone.x, screenY - (drone.getHeight() / 2), scale));
 
+                    playSound('drone_hit');
+                    setTimeout(() => playSound('drone_explosion'), 50);
+
                     // Show success dog
                     if (dronesDestroyedThisGame === 1) {
                         triggerDogAnimation('dog-one-drone');
@@ -424,6 +582,7 @@
         function reload() {
             if (gameState === 'playing') {
                 ammo = 5;
+                playSound('reload');
             }
         }
 
@@ -432,6 +591,7 @@
             round++;
             dronesSpawnedThisRound = 0;
             drones = [];
+            playSound('round_clear');
         }
 
         // Draw title screen with START button
@@ -551,11 +711,12 @@
             dronesSpawnedThisRound = 0;
             explosions = [];
             dogAnimation = { active: false, y: 0, targetY: 0, type: null, x: 0 };
+            playSound('round_start');
         }
 
         // Game loop
         let spawnTimer = 0;
-        const SPAWN_INTERVAL = 60; // frames between spawns
+        const BASE_SPAWN_INTERVAL = 60; // frames between spawns
 
         function gameLoop() {
             // Clear canvas
@@ -569,10 +730,17 @@
             } else if (gameState === 'playing') {
                 // Update dog animation
                 updateDogAnimation();
-                // Spawn drones
+                // Spawn drones - spawn faster each round
+                const spawnInterval = Math.max(30, BASE_SPAWN_INTERVAL - (round - 1) * 5);
                 spawnTimer++;
-                if (spawnTimer >= SPAWN_INTERVAL) {
-                    spawnDrone();
+                if (spawnTimer >= spawnInterval) {
+                    // Chance to spawn multiple drones increases with round
+                    const multiSpawnChance = Math.min(0.5, (round - 1) * 0.1);
+                    const spawnCount = Math.random() < multiSpawnChance ? 2 : 1;
+
+                    for (let i = 0; i < spawnCount; i++) {
+                        spawnDrone();
+                    }
                     spawnTimer = 0;
                 }
 
@@ -602,15 +770,18 @@
                             // Create explosion when drone reaches bottom
                             explosions.push(new Explosion(drone.x, canvas.height - 60, 1.2));
 
+                            playSound('drone_flyaway');
                             score -= 50;
                             dronesPassedThisGame++;
                             drones.splice(i, 1);
 
                             if (dronesPassedThisGame >= MAX_DRONES_PASSED) {
                                 gameState = 'gameOver';
+                                playSound('game_over');
                             } else {
                                 // Show laughing dog when drone gets through
                                 triggerDogAnimation('dog-laugh');
+                                playSound('dog_laugh');
                             }
                         } else {
                             drone.draw();
@@ -632,7 +803,8 @@
                 }
 
                 // Check for round completion
-                if (dronesSpawnedThisRound >= DRONES_PER_ROUND && drones.length === 0) {
+                const dronesThisRound = getDronesPerRound(round);
+                if (dronesSpawnedThisRound >= dronesThisRound && drones.length === 0) {
                     nextRound();
                 }
 
